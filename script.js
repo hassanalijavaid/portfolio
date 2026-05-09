@@ -1,6 +1,36 @@
 document.addEventListener('DOMContentLoaded', () => {
   // --- NAVBAR SCROLL EFFECT ---
+
+    // Magnetic buttons
+    const magneticBtns = document.querySelectorAll('.btn, .nav-links a, .theme-toggle');
+    magneticBtns.forEach(btn => {
+      btn.addEventListener('mousemove', (e) => {
+        const rect = btn.getBoundingClientRect();
+        const x = e.clientX - rect.left - rect.width / 2;
+        const y = e.clientY - rect.top - rect.height / 2;
+        
+        gsap.to(btn, {
+          x: x * 0.3,
+          y: y * 0.3,
+          duration: 0.3,
+          ease: "power2.out"
+        });
+      });
+      
+      btn.addEventListener('mouseleave', () => {
+        gsap.to(btn, {
+          x: 0,
+          y: 0,
+          duration: 0.3,
+          ease: "power2.out"
+        });
+      });
+    });
+
+  // --- NAVBAR SCROLL EFFECT ---
   const navbar = document.getElementById('navbar');
+  const body = document.body;
+
   window.addEventListener('scroll', () => {
     if (window.scrollY > 50) {
       navbar.classList.add('scrolled');
@@ -17,6 +47,16 @@ document.addEventListener('DOMContentLoaded', () => {
   hamburger.addEventListener('click', () => {
     navLinks.classList.toggle('active');
     hamburger.classList.toggle('active');
+    
+    if (navLinks.classList.contains('active')) {
+      gsap.from('.nav-links li', {
+        opacity: 0,
+        x: 50,
+        stagger: 0.1,
+        duration: 0.5,
+        ease: "power2.out"
+      });
+    }
   });
 
   navLinksItems.forEach(item => {
@@ -29,9 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- THEME TOGGLE ---
   const themeToggle = document.getElementById('themeToggle');
   const themeIcon = document.getElementById('themeIcon');
-  const body = document.body;
 
-  // Check for saved theme
   const savedTheme = localStorage.getItem('portfolio-theme') || 'dark';
   body.setAttribute('data-theme', savedTheme);
   updateThemeIcon(savedTheme);
@@ -49,82 +87,45 @@ document.addEventListener('DOMContentLoaded', () => {
     themeIcon.textContent = theme === 'dark' ? '☀️' : '🌙';
   }
 
-  // --- ACTIVE NAV LINK ON SCROLL ---
-  const sections = document.querySelectorAll('section');
-  window.addEventListener('scroll', () => {
-    let current = '';
-    sections.forEach(section => {
-      const sectionTop = section.offsetTop;
-      const sectionHeight = section.clientHeight;
-      if (pageYOffset >= sectionTop - 150) {
-        current = section.getAttribute('id');
-      }
-    });
-
-    navLinksItems.forEach(a => {
-      a.classList.remove('active');
-      if (a.getAttribute('href').includes(current)) {
-        a.classList.add('active');
-      }
-    });
-  });
-
-  // Old skill observer removed to be re-initialized after dynamic render
-
-  // --- CONTACT FORM HANDLING ---
-  const contactForm = document.getElementById('contactForm');
-  const sendBtn = document.getElementById('sendBtn');
-  const formSuccess = document.getElementById('formSuccess');
-
-  contactForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    
-    // Simulate sending
-    sendBtn.disabled = true;
-    sendBtn.textContent = 'Sending...';
-    
-    setTimeout(() => {
-      contactForm.reset();
-      sendBtn.disabled = false;
-      sendBtn.textContent = 'Send Message 🚀';
-      formSuccess.style.display = 'block';
-      
-      setTimeout(() => {
-        formSuccess.style.display = 'none';
-      }, 5000);
-    }, 1500);
-  });
-
-  // --- BACK TO TOP BUTTON ---
-  const backToTop = document.getElementById('backToTop');
-  window.addEventListener('scroll', () => {
-    if (window.scrollY > 500) {
-      backToTop.classList.add('visible');
-    } else {
-      backToTop.classList.remove('visible');
-    }
-  });
-
   // --- DYNAMIC RENDERING ---
   if (typeof portfolioData !== 'undefined') {
+    renderContent();
+  }
+
+  function renderContent() {
+    const resumeLink = portfolioData.personal.resumeLink || "#";
+
     // Personal Info
     document.getElementById('nav-logo').innerHTML = `${portfolioData.personal.logoText}<span>.</span>`;
     document.getElementById('hero-name').innerHTML = `${portfolioData.personal.firstName} <span class="gradient-text">${portfolioData.personal.lastName}</span>`;
     document.getElementById('hero-title').innerHTML = portfolioData.personal.jobTitle.replace('AI Engineer', '<span class="gradient-text">AI Engineer</span>');
     document.getElementById('hero-bio').innerHTML = portfolioData.personal.bio;
     
+    // Hero Tags
+    const heroTags = document.querySelector('.hero-tags');
+    if (heroTags) {
+      const tags = [...portfolioData.skills.programming.slice(0, 1), ...portfolioData.skills.libraries.slice(0, 1), ...portfolioData.skills.tools.slice(0, 2)];
+      heroTags.innerHTML = tags.map(t => `<span class="tag">${typeof t === 'string' ? t : t.name}</span>`).join('');
+    }
+    
     document.getElementById('contact-email').href = `mailto:${portfolioData.personal.email}`;
     document.getElementById('contact-email-text').textContent = portfolioData.personal.email;
     
     document.getElementById('contact-linkedin').href = portfolioData.personal.linkedIn;
-    document.getElementById('contact-linkedin-text').textContent = portfolioData.personal.linkedIn.replace('https://', '').replace('www.', '');
+    document.getElementById('contact-linkedin-text').textContent = portfolioData.personal.linkedIn.split('in/')[1]?.split('?')[0] || 'LinkedIn';
     
     document.getElementById('contact-github').href = portfolioData.personal.github;
     document.getElementById('contact-github-text').textContent = portfolioData.personal.github.replace('https://', '').replace('www.', '');
     
+    const contactCV = document.getElementById('contact-cv');
+    if (contactCV) {
+      contactCV.href = resumeLink;
+      contactCV.setAttribute('download', resumeLink.split('/').pop() || 'Hassan_Ali_Javaid_CV.pdf');
+    }
+
     document.getElementById('footer-name').textContent = `${portfolioData.personal.firstName} ${portfolioData.personal.lastName}`;
 
-    // About Text & Stats
+    // About
     const aboutTextContainer = document.getElementById('about-text-container');
     const parasHtml = portfolioData.about.paragraphs.map(p => `<p>${p}</p>`).join('');
     const statsHtml = `<div class="about-stats">${portfolioData.about.stats.map(s => `
@@ -148,7 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="skill-items">${portfolioData.skills.programming.map(s => `
           <div class="skill-item">
             <div class="skill-info"><span>${s.name}</span><span>${s.percentage}%</span></div>
-            <div class="skill-bar"><div class="skill-fill" data-width="${s.percentage}"></div></div>
+            <div class="skill-bar"><div class="skill-fill" style="width: 0" data-width="${s.percentage}"></div></div>
           </div>`).join('')}
         </div>
       </div>
@@ -157,7 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="skill-items">${portfolioData.skills.libraries.map(s => `
           <div class="skill-item">
             <div class="skill-info"><span>${s.name}</span><span>${s.percentage}%</span></div>
-            <div class="skill-bar"><div class="skill-fill" data-width="${s.percentage}"></div></div>
+            <div class="skill-bar"><div class="skill-fill" style="width: 0" data-width="${s.percentage}"></div></div>
           </div>`).join('')}
         </div>
       </div>
@@ -175,17 +176,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const projectsContainer = document.getElementById('projects-container');
     projectsContainer.innerHTML = portfolioData.projects.map((p, i) => `
       <div class="project-card">
-        <div class="project-header">
-          <span class="project-num">0${i + 1}</span>
-          <div class="project-links"><a href="${p.githubLink}" target="_blank" class="proj-link" title="GitHub">⬡ GitHub</a></div>
+        <div class="project-img-container">
+          <img src="${p.image || 'hero_bg.png'}" alt="${p.title}" class="project-img" />
         </div>
-        <h3 class="project-title">${p.title}</h3>
-        <p class="project-desc">${p.desc}</p>
-        <div class="project-meta">
-          <div class="project-meta-item"><span>🎯 Role:</span> ${p.role}</div>
-          <div class="project-meta-item"><span>📊 Result:</span> ${p.result}</div>
+        <div class="project-content">
+          <div class="project-header">
+            <span class="project-num">0${i + 1}</span>
+            <a href="${p.githubLink}" target="_blank" class="proj-link">View Project</a>
+          </div>
+          <h3 class="project-title">${p.title}</h3>
+          <p class="project-desc">${p.desc}</p>
+          <div class="project-meta">
+            <div class="project-meta-item"><span>🎯 Role:</span> ${p.role}</div>
+            <div class="project-meta-item"><span>📊 Result:</span> ${p.result}</div>
+          </div>
+          <div class="project-tech">${p.tech.map(t => `<span class="tech-badge">${t}</span>`).join('')}</div>
         </div>
-        <div class="project-tech">${p.tech.map(t => `<span class="tech-badge">${t}</span>`).join('')}</div>
       </div>
     `).join('');
 
@@ -204,25 +210,11 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
     `).join('');
 
-    // Education
+    // Certifications Only
     const educationContainer = document.getElementById('education-container');
-    const eduHtml = portfolioData.education.map(e => `
-      <div class="edu-card">
-        <div class="edu-icon">🎓</div>
-        <div class="edu-content">
-          <span class="edu-badge">${e.date}</span>
-          <h3>${e.title}</h3>
-          <p class="edu-org">${e.org}</p>
-          <p>${e.desc}</p>
-          <span class="edu-grade">${e.grade}</span>
-        </div>
-      </div>
-    `).join('');
-    
     const certsHtml = `
-      <div class="certs-section">
-        <h3 class="certs-title">Certifications</h3>
-        <div class="certs-list">${portfolioData.certifications.map(c => `
+      <div class="certs-section-full" style="width: 100%;">
+        <div class="certs-list-large">${portfolioData.certifications.map(c => `
           <div class="cert-item">
             <div class="cert-logo">${c.icon}</div>
             <div class="cert-info">
@@ -234,64 +226,108 @@ document.addEventListener('DOMContentLoaded', () => {
         `).join('')}</div>
       </div>
     `;
-    educationContainer.innerHTML = eduHtml + certsHtml;
-  }
+    educationContainer.innerHTML = certsHtml;
 
-  // --- SKILL BARS ANIMATION RE-INITIALIZED ---
-  const skillSection = document.getElementById('skills');
-  const skillBars = document.querySelectorAll('.skill-fill');
-  
-  const animateSkills = (entries, observer) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        skillBars.forEach(bar => {
-          const width = bar.getAttribute('data-width');
-          bar.style.width = `${width}%`;
-        });
-        observer.unobserve(entry.target);
+    // CV View & Download Links
+    const viewCVBtn = document.getElementById('viewCV');
+    const downloadBtn = document.getElementById('downloadCV');
+
+    if (viewCVBtn) viewCVBtn.href = resumeLink;
+    
+    if (downloadBtn) {
+      downloadBtn.href = resumeLink;
+      if (resumeLink && resumeLink !== "#") {
+        const fileName = resumeLink.split('/').pop() || 'Hassan_Ali_Javaid_CV.pdf';
+        downloadBtn.setAttribute('download', fileName);
       }
-    });
-  };
-
-  const skillObserver = new IntersectionObserver(animateSkills, { threshold: 0.5 });
-  if (skillSection) skillObserver.observe(skillSection);
-
-  // --- REVEAL ANIMATION ON SCROLL ---
-  const revealElements = document.querySelectorAll('.project-card, .skill-card, .timeline-item, .edu-card, .about-text');
-  
-  const revealOnScroll = (entries, observer) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.style.opacity = '1';
-        entry.target.style.transform = 'translateY(0)';
-        observer.unobserve(entry.target);
-      }
-    });
-  };
-
-  const revealObserver = new IntersectionObserver(revealOnScroll, { 
-    threshold: 0.1,
-    rootMargin: '0px 0px -50px 0px'
-  });
-
-  revealElements.forEach(el => {
-    el.style.opacity = '0';
-    el.style.transform = 'translateY(30px)';
-    el.style.transition = 'all 0.6s ease-out';
-    revealObserver.observe(el);
-  });
-
-  // --- ADD FLOATING PARTICLES ANIMATION ---
-  const particlesContainer = document.getElementById('particles');
-  if (particlesContainer) {
-    for(let i=0; i<40; i++) {
-      let span = document.createElement('span');
-      span.classList.add('particle-anim');
-      span.style.top = Math.random() * 100 + '%';
-      span.style.left = Math.random() * 100 + '%';
-      span.style.animationDelay = (Math.random() * 5) + 's';
-      span.style.animationDuration = (Math.random() * 10 + 10) + 's';
-      particlesContainer.appendChild(span);
     }
+
+    // Initialize GSAP Animations after rendering
+    initGSAP();
   }
+
+  function initGSAP() {
+    gsap.registerPlugin(ScrollTrigger);
+
+    // Hero Section
+    const heroTl = gsap.timeline();
+    heroTl.from(".hero-badge", { y: 20, opacity: 0, duration: 0.8, ease: "power3.out" })
+          .from(".hero-name", { y: 30, opacity: 0, duration: 0.8, ease: "power3.out" }, "-=0.6")
+          .from(".hero-title", { y: 30, opacity: 0, duration: 0.8, ease: "power3.out" }, "-=0.6")
+          .from(".hero-bio", { y: 30, opacity: 0, duration: 0.8, ease: "power3.out" }, "-=0.6")
+          .from(".hero-cta .btn", { scale: 0.8, opacity: 0, stagger: 0.2, duration: 0.6, ease: "back.out(1.7)" }, "-=0.4")
+          .from(".hero-visual", { scale: 0.9, opacity: 0, duration: 1.2, ease: "power2.out" }, "-=1");
+
+    // Scroll Revelations
+    gsap.utils.toArray('.section-header, .about-grid, .skill-card, .project-card, .timeline-item, .edu-card').forEach(el => {
+      gsap.from(el, {
+        scrollTrigger: {
+          trigger: el,
+          start: "top 85%",
+          toggleActions: "play none none none"
+        },
+        y: 50,
+        opacity: 0,
+        duration: 1,
+        ease: "power3.out"
+      });
+    });
+
+    // Skill Bars
+    gsap.utils.toArray('.skill-fill').forEach(bar => {
+      const width = bar.getAttribute('data-width');
+      gsap.to(bar, {
+        scrollTrigger: {
+          trigger: bar,
+          start: "top 90%"
+        },
+        width: `${width}%`,
+        duration: 1.5,
+        ease: "power2.out"
+      });
+    });
+
+    // Parallax background
+    gsap.to(".hero-particles", {
+      scrollTrigger: {
+        trigger: ".hero",
+        start: "top top",
+        end: "bottom top",
+        scrub: true
+      },
+      y: 100,
+      opacity: 0
+    });
+  }
+
+  // --- CONTACT FORM ---
+  const contactForm = document.getElementById('contactForm');
+  if (contactForm) {
+    contactForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const sendBtn = document.getElementById('sendBtn');
+      const formSuccess = document.getElementById('formSuccess');
+      
+      sendBtn.disabled = true;
+      sendBtn.textContent = 'Sending...';
+      
+      setTimeout(() => {
+        contactForm.reset();
+        sendBtn.disabled = false;
+        sendBtn.textContent = 'Send Message 🚀';
+        formSuccess.style.display = 'block';
+        setTimeout(() => formSuccess.style.display = 'none', 5000);
+      }, 1500);
+    });
+  }
+
+  // --- BACK TO TOP ---
+  const backToTop = document.getElementById('backToTop');
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 500) {
+      backToTop.classList.add('visible');
+    } else {
+      backToTop.classList.remove('visible');
+    }
+  });
 });
