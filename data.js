@@ -9,7 +9,7 @@ const portfolioData = {
     linkedIn: "https://www.linkedin.com/in/hassan-ali-javaid-4b8834345",
     github: "https://github.com/hassanalijavaid",
     bio: "Highly motivated IT graduate specializing in Artificial Intelligence and Machine Learning. Proven expertise in model training and building advanced Agentic AI solutions, combined with a strong background in Cybersecurity to drive secure and innovative engineering.",
-    resumeLink: "Hassan_Ali_Javaid_CV.pdf"
+    resumeLink: "Hassan_Ali_Resume.pdf"
   },
 
   // About Section
